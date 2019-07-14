@@ -1,0 +1,141 @@
+body{
+    margin: 0;
+    background-color: #696666;
+
+    font-family: Arial;
+    color: white;
+
+    text-align: center;
+}
+
+
+.title-bar{
+    text-align: center;
+    background-color: black;
+    height: 45px;
+
+    /*display: -webkit-flex;
+    display: flex;*/
+
+    padding-top: 30px;
+    padding-left: 10px;
+    border-bottom: 4px solid red;
+
+    position: relative;
+
+    
+}
+
+.buttons{
+    text-align: center;
+    background-color: rgb(53, 52, 52);
+    height: 40px;
+    /*display: -webkit-flex;
+    display: flex;*/
+    margin: 0;
+
+    padding-left: 10px;
+    border-bottom: 3px solid black;
+    font-size: 0;
+    padding-top: 10px;
+    position: relative;
+}
+
+.title-bar h1{
+    position: relative;
+    padding: none;
+    border: none;
+    font-size: 30px;
+    /*display: -webkit-flex;
+    display: flex;*/
+    bottom: 50%;
+    text-align: center;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+
+}
+
+button, .submit-button{
+    margin: 0;
+    border: 2px solid #696666;
+    border-top: none;
+    border-bottom: none;
+    border-radius: 3px;
+    
+    width: 90px;
+    height: 50px; /* FULL HEIGHT: 50px*/
+
+    position: relative;
+    bottom: 20%;
+    
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+
+    background-color: black;
+    color: white;
+}
+
+button:hover, .submit-button:hover{
+    color: #696666;
+    border-bottom: 2px solid red;
+    border-top: none;
+}
+
+form{
+    margin: 100px auto;
+}
+
+input{
+    background-color: black;
+    border: none;
+    width: 40em;
+    height: 2em;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    margin-top: 2em;
+    color: rgb(255, 0, 0);
+}
+
+.container{
+    background-color: rgb(53, 52, 52);
+    width: 60%;
+    box-shadow: 4px 4px 6px black;
+    margin: 0 auto; 
+    min-height: 85vh;
+}
+
+.page-title{
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    height: 15px;
+    padding-top: 10px;
+    padding-bottom: 5px;
+    margin: 0 auto;
+    background-color: black;
+    border-bottom: 2px solid red;
+}
+
+.footer{
+    margin: 0 auto;
+    width: 60%;
+    font-size: 12px;
+}
+
+select{
+    -webkit-appearance: button;
+    -moz-appearance: button;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -webkit-padding-end: 20px;
+    -moz-padding-end: 20px;
+    -webkit-padding-start: 2px;
+    -moz-padding-start: 2px;
+    background-color: #F07575;
+}
+
+::-webkit-scrollbar{
+    display: none;
+}
+
+

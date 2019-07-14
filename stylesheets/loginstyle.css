@@ -1,0 +1,24 @@
+body{
+    text-align: center;
+}
+
+h1{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 30px;
+    text-align: center;
+}
+
+.submit-button{
+    margin-top: 2em;
+    border-top: 2px solid white;
+}
+
+.errors{
+    color: darkred;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+label{
+    display: inline;
+}

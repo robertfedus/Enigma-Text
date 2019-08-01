@@ -2,152 +2,88 @@
 namespace MyApp;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
-use Symfony\Component\HttpFoundation\Session\Storage\Handler;
-
 
 
 class Chat implements MessageComponentInterface {
     protected $clients;
-    private $myConn;
-    private $myUser;
 
     public function __construct() {
         $this->clients = new \SplObjectStorage;
-        echo "Server started\n";
-    }
-
-    private function getEncryption($user, $action){
-        $conn = mysqli_connect("localhost", "robertfedus", "r4997740", "users");
-
-        switch($action){
-            case "bool":
-                $result = mysqli_query($conn, "SELECT encrypt FROM accounts WHERE username = '$user' LIMIT 1");
-                return mysqli_fetch_field($result);
-                break;
-            
-            case "rotors":
-                $result1 = mysqli_query($conn, "SELECT rotor1 FROM accounts WHERE username = '$user' LIMIT 1");
-                $result2 = mysqli_query($conn, "SELECT rotor2 FROM accounts WHERE username = '$user' LIMIT 1");
-                $result3 = mysqli_query($conn, "SELECT rotor3 FROM accounts WHERE username = '$user' LIMIT 1");
-                $rotor1 = mysqli_fetch_assoc($result1);
-                $rotor2 = mysqli_fetch_assoc($result2);
-                $rotor3 = mysqli_fetch_assoc($result3);
-                $rotors = array($rotor1, $rotor2, $rotor3);
-
-                return $rotors;
-                break;
-        }
-
-    }
-
-    private function encrypt($user, $msg){
-        $length = strlen($msg);
-
-        $rotors = $this->getEncryption($user, "rotors");
-
-        return $length;
+        echo "Server started";
     }
 
     public function onOpen(ConnectionInterface $conn) {
         // Store the new connection to send messages to later
         $this->clients->attach($conn);
-        $this->myConn = $conn->resourceId;
-        echo "New connection! ({$conn->resourceId})\n";
-        
 
-        //$user = $data['username'];
-        //$db = mysqli_connect("localhost", "robertfedus", "r4997740", "users");
-        //mysqli_query($db, "UPDATE accounts SET connection = '$conn->resourceId' WHERE username = '$user'");
+        echo "New connection! ({$conn->resourceId})\n";
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
-
-
         $numRecv = count($this->clients) - 1;
         echo sprintf('Connection %d sending message "%s" to %d other connection%s' . "\n"
             , $from->resourceId, $msg, $numRecv, $numRecv == 1 ? '' : 's');
 
-        $data = json_decode($msg, true);
+            $conn = mysqli_connect("localhost", "robertfedus", "r4997740", "users");
+            if(!$conn){
+                die('Error connecting to database: ' . mysql_error());
+            }
 
-        //$data['from'] = $user;
-        $data['dt'] = date('d-m-Y h:m:s');
-        $sentOn = $data['dt'];
+            $data = json_decode($msg, true);
+            $username = $data['username'];
+            $data['dt'] = date('d-m-Y h:m:s');
+            $sentOn = date('Y-m-d h:m:s');
+            $message = $data['msg'];
 
-        $message = $data['msg'];
-        $username = $data['username'];
-        $sentOn = date('Y-m-d h:m:s');
-        //$chat = $data['chat'];
-        //$chat = $toUser;
-        echo $this->getEncryption($username, "bool");
-       
-        if($this->getEncryption($username, "bool") == 1){
-            $this->encrypt($username, $message);
-            echo "Message is sent encrypted.\n";
-            echo "\nMessage length: " . $this->encrypt($username, $message) . "\n";
-        } 
+
+            // OBTINEM PREVIOUS ID
+            $result = mysqli_query($conn, 'SELECT id FROM messages ORDER BY id DESC LIMIT 1');
+            $row = mysqli_fetch_assoc($result);
+            $prev_id = (int)$row['id'];
+            $data['id'] = $prev_id + 1;
             
-        $users = mysqli_connect("localhost", "robertfedus", "r4997740", "users");
-        $result = mysqli_query($users, "SELECT current_chat FROM accounts WHERE username = '$username' LIMIT 1");
-        $getChat = mysqli_fetch_assoc($result);
-        $chat = $getChat['current_chat'];
 
+            // OBTINEM current_chat
+            $result = mysqli_query($conn, "SELECT current_chat FROM accounts WHERE username = '$username' LIMIT 1");
+            $row = mysqli_fetch_assoc($result);
+            $current_chat = (string)$row['current_chat'];
+            $data['current_chat'] = $current_chat;
 
-        $messageConn = mysqli_connect("localhost", "robertfedus", "r4997740", "messages");
-        $case1 = strtolower($username . "_" . $chat);
-        $case2 = strtolower($chat . "_" . $username);
-        $checkTable1 = mysqli_query($messageConn, "SELECT 1 FROM $case1 LIMIT 1");
-        $checkTable2 = mysqli_query($messageConn, "SELECT 1 FROM $case2 LIMIT 1");
+            // INSERARE IN BAZA DE DATE A MESAJULUI
+            // VERIFICAM DACA ENCRYPT E 1 SAU 0 IN BAZA DE DATE
+            $result = mysqli_query($conn, "SELECT encrypt FROM accounts WHERE username = '$username' LIMIT 1");
+            $row = mysqli_fetch_assoc($result);
 
-
-        if($checkTable1){
-
-            mysqli_query($messageConn, "INSERT INTO $case1 VALUES(null, '$username', '$message', '$sentOn')");
-         } else if($checkTable2){
-            mysqli_query($messageConn, "INSERT INTO $case2 VALUES(null, '$username', '$message', '$sentOn')");
-         }
-
-        $username = $data['username'];
-        $this->myUser = $username;
-        echo "The ID is: " . $this->myConn . "\n";
-        $id = $this->myConn;
-        mysqli_query($users, "UPDATE accounts SET connection = '$id' WHERE username = '$username'");
-        $result = mysqli_query($users, "SELECT current_chat FROM accounts WHERE username = '$username'");
-        while($row = mysqli_fetch_array($result))
-            $current_chat = $row['current_chat'];
-
-        $result = mysqli_query($users, "SELECT connection FROM accounts WHERE username = '$current_chat'");
-        while($row = mysqli_fetch_array($result))
-            $current_chat_connection = $row['connection'];
+            if((int)$row['encrypt'] == 1){
+                $encrypted_message = $data['encrypted'];
+                $result1 = mysqli_query($conn, "SELECT rotor1 FROM accounts WHERE username = '$username' LIMIT 1");
+                $row1 = mysqli_fetch_assoc($result1);
+                $r1 = (int)$row1['rotor1'];
         
-        $toSend = $current_chat_connection;
+                $result2 = mysqli_query($conn, "SELECT rotor2 FROM accounts WHERE username = '$username' LIMIT 1");
+                $row2 = mysqli_fetch_assoc($result2);
+                $r2 = (int)$row2['rotor2'];
+        
+                $result3 = mysqli_query($conn, "SELECT rotor3 FROM accounts WHERE username = '$username' LIMIT 1");
+                $row3 = mysqli_fetch_assoc($result3);
+                $r3 = (int)$row3['rotor3'];
+                mysqli_query($conn, "INSERT INTO messages(senter, receiver, message, encrypted_message, time, rotor1, rotor2, rotor3, encrypted) VALUES('$username', '$current_chat', '$message', '$encrypted_message', '$sentOn', '$r1', '$r2', '$r3', 1)");
+            } else
+                mysqli_query($conn, "INSERT INTO messages(senter, receiver, message, time) VALUES('$username', '$current_chat', '$message', '$sentOn')");
+
+
+
+
+
+
         foreach ($this->clients as $client) {
-            if ($from == $client && $data['username'] != 'connecting...') {
-                //$data['username'] = "You";
-            } else{
-                $data['username'] = $data['username'];
-            }
-
-
-            if($data['username'] != 'connecting...' && $data['msg'] != 'connecting...'){
-                if ($toSend == $client->resourceId)
-                    $client->send(json_encode($data));
-                if ($from == $client)
-                    $client->send(json_encode($data));
-            }
-
+            $client->send(json_encode($data));
+            
         }
-
-        return $username;
     }
 
     public function onClose(ConnectionInterface $conn) {
-        // The connection is closed, remove it, as we can no longer send it messages
         $this->clients->detach($conn);
-
-        /*if(isset($this->myUser)){
-            $users = mysqli_connect("localhost", "robertfedus", "r4997740", "users");
-            mysqli_query($users, "UPDATE accounts SET connection = 0 WHERE username = '$this->myUser'");
-        }*/
 
         echo "Connection {$conn->resourceId} has disconnected\n";
     }
@@ -157,4 +93,101 @@ class Chat implements MessageComponentInterface {
 
         $conn->close();
     }
+
+    /*public function getRotorsFromDB($username){
+        $result = mysqli_query($conn, "SELECT rotor1 FROM accounts WHERE username = '$username' LIMIT 1");
+        $row = mysqli_fetch_assoc($result);
+        $r1 = (int)$row['rotor1'];
+
+        $result = mysqli_query($conn, "SELECT rotor2 FROM accounts WHERE username = '$username' LIMIT 1");
+        $row = mysqli_fetch_assoc($result);
+        $r2 = (int)$row['rotor2'];
+
+        $result = mysqli_query($conn, "SELECT rotor3 FROM accounts WHERE username = '$username' LIMIT 1");
+        $row = mysqli_fetch_assoc($result);
+        $r3 = (int)$row['rotor3'];
+
+        return $rotors = array($r1, $r2, $r3);
+    }
+
+    public function encrypt($username, $text, $rotor1, $rotor2, $rotor3){
+        $text = strtolower($text);
+        $lgt = strlen($text);
+        $user = $username;
+        $rotor1 = getRotor(getRotorsFromDB($user)[0]);
+        $rotor2 = getRotor(getRotorsFromDB($user)[1]);
+        $rotor3 = getRotor(getRotorsFromDB($user)[2]);
+
+        $j = 97;
+
+        for($i = 0; $i <= 25; $i++){
+            $alph[$i] = $j;
+            $j++;
+        }
+        for($i = 0; $i <= $lgt - 1; $i++){
+            if($text[$i] == ' ')
+                $eText[$i] = ' ';
+                else{
+            // Obtinem indicele
+                    for($j = 0; $j <= 25; $j++)
+                        if($text[$i] == chr($alph[$j]))
+                            $index = $j;
+    
+                    if($i % 4 != 0 && $i % 16 != 0){
+                        $eText[$i] = chr($rotor1[$index]);
+                        $rotor1 = moveRotor($rotor1); //Mutarea primului rotor, la fiecare litera
+                    } 
+                    if($i % 4 == 0){
+                        $eText[$i] = chr($rotor2[$index]);
+                        $rotor2 = moveRotor($rotor2);
+                        $rotor1 = moveRotor($rotor1);
+                        $rotor1 = moveRotor($rotor1);
+                    }
+                    if($i % 16 == 0){
+                        $eText[i] = chr($rotor3[$index]);
+                        $rotor3 = moveRotor($rotor3);
+                        $rotor1 = moveRotor($rotor1);
+                        $rotor1 = moveRotor($rotor1);
+                        $rotor1 = moveRotor($rotor1);
+                    }
+                    return implode('', $eText); 
+            }
+    
+    
+        }
+    }
+
+    public function getRotor($pos){
+        $j = 97;
+        for($i = 0; $i <= 25; $i++){
+            $alph[$i] = $j;
+            $j++;
+        }
+        $j = 0;
+        for($i = $pos - 1; $i <= 25; $i++){
+            $rotor[$j] = $alph[$i];
+            $j++;
+        }
+
+        if(sizeof($rotor) != 26){
+            for($i = 0; $i <= $pos - 2; $i++){
+                $rotor[$j] = $alph[$i];
+                $j++;
+            }
+        }
+    
+        return $rotor;
+    }
+    public function moveRotor($rotor){
+
+        // Permutare circulara spre stanga
+        $x = $rotor[0];
+        
+        for($i = 1; $i <= 25; $i++)
+            $rotor[$i - 1] = $rotor[$i];
+        $rotor[25] = $x;
+    
+    
+        return $rotor;
+    }*/
 }
